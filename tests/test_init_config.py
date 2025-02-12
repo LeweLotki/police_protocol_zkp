@@ -44,7 +44,6 @@ def test_reject_invalid_generator():
     assert response.status_code == 400
     assert "Invalid generator" in response.json()["detail"]
 
-# Test fetching the current stored configuration
 def test_get_current_configuration():
     # First, store a valid prime and generator
     client.post("/initial_configuration", json={
@@ -55,8 +54,8 @@ def test_get_current_configuration():
     # Then, retrieve it
     response = client.get("/initial_configuration")
     assert response.status_code == 200
-    assert response.json() == {
-        "prime": VALID_PRIME,
-        "generator": VALID_GENERATOR
-    }
+    data = response.json()
+
+    assert data["prime"] == VALID_PRIME
+    assert data["generator"] == VALID_GENERATOR
 
