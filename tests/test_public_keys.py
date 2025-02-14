@@ -57,3 +57,50 @@ def test_get_nonexistent_public_key():
     assert response.status_code == 404
     assert response.json() == {"detail": "Public key not found"}
 
+# Test initializing the server's private and public key
+def test_initialize_server_keys():
+    response = client.post("/public_keys/initialize", json={"prime": VALID_PRIME, "generator": VALID_GENERATOR})
+    assert response.status_code == 200
+    data = response.json()
+
+    assert "server_id" in data
+    assert "public_key" in data
+
+# Test initializing server keys when they already exist
+def test_initialize_server_keys_already_exists():
+    # First initialization
+    client.post("/public_keys/initialize", json={"prime": VALID_PRIME, "generator": VALID_GENERATOR})
+
+    # Second initialization attempt (should fail)
+    response = client.post("/public_keys/initialize", json={"prime": VALID_PRIME, "generator": VALID_GENERATOR})
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Server keys already initialized"
+
+# Test retrieving the server's own public key
+def test_get_my_public_key():
+    response = client.get("/public_keys/my_public_key")
+    assert response.status_code == 200
+    data = response.json()
+
+    assert "server_id" in data
+    assert "public_key" in data
+
+# Test retrieving my public key before initialization (should fail)
+# Test retrieving my public key before initialization (should fail)
+def test_get_my_public_key_not_initialized():
+    """Ensure retrieving my public key before initialization returns 404."""
+
+    # Reset state: Remove any stored keys before running this test
+    from app.core.database import SessionLocal
+    from app.resources.public_keys.model import ServerIdentity
+
+    db = SessionLocal()
+    db.query(ServerIdentity).delete()  # Clear server identity
+    db.commit()
+    db.close()
+
+    # Now try fetching the public key (should return 404)
+    response = client.get("/public_keys/my_public_key")
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Server identity not found"
+
