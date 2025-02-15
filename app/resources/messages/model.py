@@ -1,13 +1,14 @@
-from sqlalchemy import Column, String, Integer, DateTime, func
+from sqlalchemy import Column, String, ForeignKey, DateTime, func
 from app.core.database import Base
 
 class Message(Base):
-    """Database model for storing encrypted messages and sender IDs."""
     __tablename__ = "messages"
 
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    server_id = Column(String, index=True)  # The sender's unique ID
-    message = Column(String, nullable=False)  # The encrypted message
-    proof = Column(String, nullable=True)  # Placeholder for Schnorr proof
-    timestamp = Column(DateTime, default=func.now())  # Timestamp of the message
+    id = Column(String, primary_key=True, index=True)  # UUID primary key
+    server_id = Column(String, ForeignKey("public_keys.server_id"), nullable=False)
+    message = Column(String, nullable=False)
+    commitment = Column(String, nullable=False)  # ✅ Store large numbers as strings
+    proof = Column(String, nullable=False)  # ✅ Store large numbers as strings
+    challenge = Column(String, nullable=False)  # ✅ Store large numbers as strings
+    timestamp = Column(DateTime, default=func.now(), nullable=False)  # ✅ Timestamp added
 

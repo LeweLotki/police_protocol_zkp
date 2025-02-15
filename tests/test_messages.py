@@ -1,5 +1,5 @@
 # tests/test_messages.py
-
+from app.core.database import get_db
 import pytest
 from fastapi.testclient import TestClient
 from app.main import app
@@ -15,10 +15,30 @@ TEST_SERVER_ID_2 = str(uuid.uuid4())
 TEST_MESSAGE = "Hello, this is a test message."
 
 def setup_keys():
-    """Setup server keys for testing."""
+    """Setup server keys for testing, ensuring private keys are stored correctly."""
+    from app.core.database import get_db
+    from app.resources.public_keys.model import ServerIdentity
+
+    # Initialize prime and generator
     client.post("/public_keys/initialize", json={"prime": VALID_PRIME, "generator": VALID_GENERATOR})
-    client.post("/public_keys/send", json={"server_id": TEST_SERVER_ID_1, "public_key": 10})
-    client.post("/public_keys/send", json={"server_id": TEST_SERVER_ID_2, "public_key": 15})
+
+    # Generate key pair for TEST_SERVER_ID_1
+    response_1 = client.post("/public_keys/calculate", json={"prime": VALID_PRIME, "generator": VALID_GENERATOR})
+    private_key_1 = response_1.json()["private_key"]
+    public_key_1 = response_1.json()["public_key"]
+    client.post("/public_keys/send", json={"server_id": TEST_SERVER_ID_1, "public_key": public_key_1})
+
+    # Generate key pair for TEST_SERVER_ID_2
+    response_2 = client.post("/public_keys/calculate", json={"prime": VALID_PRIME, "generator": VALID_GENERATOR})
+    private_key_2 = response_2.json()["private_key"]
+    public_key_2 = response_2.json()["public_key"]
+    client.post("/public_keys/send", json={"server_id": TEST_SERVER_ID_2, "public_key": public_key_2})
+
+    # Store private keys in the database
+    db = next(get_db())  # Get a database session
+    db.add(ServerIdentity(server_id=TEST_SERVER_ID_1, public_key=public_key_1, private_key=private_key_1))
+    db.add(ServerIdentity(server_id=TEST_SERVER_ID_2, public_key=public_key_2, private_key=private_key_2))
+    db.commit()
 
 # Test sending a message from a client
 def test_send_message():
