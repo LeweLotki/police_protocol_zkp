@@ -19,18 +19,19 @@ def generate_schnorr_proof(message: str, private_key: int, prime: int, generator
     :param generator: The generator.
     :return: (commitment, proof, challenge)
     """
-    # Step 1: Choose a random nonce (r)
-    r = random.randint(1, prime - 1)
+    q = (prime - 1) // 2  # Approximate order of the subgroup
 
-    # Step 2: Compute commitment C = g^r mod p
+    r = random.randint(1, q - 1)  # Random nonce
+
+    # Compute commitment C = g^r mod p
     commitment = pow(generator, r, prime)
 
-    # Step 3: Compute challenge c = H(commitment, public_key^r mod p, H(message))
-    public_key = pow(generator, private_key, prime)  # Compute public key y = g^x mod p
-    challenge = hash_value(commitment, pow(public_key, r, prime), hash_value(message))
+    # Compute challenge c = H(commitment, public_key, H(message))
+    public_key = pow(generator, private_key, prime)
+    challenge = hash_value(commitment, public_key, hash_value(message)) % q
 
-    # Step 4: Compute response s = r + c * x mod (p-1)
-    proof = (r + challenge * private_key) % (prime - 1)
+    # Compute response s = r + c * x mod q
+    proof = (r + challenge * private_key) % q  # ✅ Fix: use q instead of prime
 
     return commitment, proof, challenge
 
@@ -46,8 +47,9 @@ def verify_schnorr_proof(
     """
     Verifies a Schnorr proof.
     """
+    q = (prime - 1) // 2  # Approximate order of the subgroup
 
-    # ✅ Ensure proof and commitment are integers
+    # Convert inputs to integers
     proof = int(proof)
     commitment = int(commitment)
     challenge = int(challenge)
@@ -55,12 +57,15 @@ def verify_schnorr_proof(
     prime = int(prime)
     generator = int(generator)
 
-    # Step 1: Compute g^s mod p
+    # Compute left-side: g^s mod p
     left_side = pow(generator, proof, prime)
 
-    # Step 2: Compute y^c * r mod p
+    # Compute right-side: y^c * r mod p
     right_side = (pow(public_key, challenge, prime) * commitment) % prime
 
-    # Step 3: Check if proof is valid
+    print(f"Computed left-side: {left_side}")
+    print(f"Expected right-side: {right_side}")
+    print(f"Verification result: {left_side == right_side}")
+
     return left_side == right_side
 

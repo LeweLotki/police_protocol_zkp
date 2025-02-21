@@ -40,9 +40,9 @@ def verify_message(request: schemas.VerifyMessageRequest, db: Session = Depends(
     # Verify Schnorr proof
     is_valid = utils.verify_schnorr_proof(
         message=request.message,
-        commitment=stored_message.proof,  # In a real implementation, commitment should be stored separately
-        proof=stored_message.proof,  # Use the stored proof
-        challenge=utils.hash_value(stored_message.message),  # Recompute challenge
+        commitment=stored_message.commitment,  # ✅ Use the stored commitment
+        proof=stored_message.proof,
+        challenge = utils.hash_value(stored_message.commitment, public_key, utils.hash_value(request.message)),
         public_key=public_key,
         prime=prime,
         generator=generator
