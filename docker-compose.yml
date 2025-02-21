@@ -13,3 +13,16 @@ services:
       - PYTHONUNBUFFERED=1
       - DATABASE_URL=sqlite:///app/db.sqlite3
 
+  client:
+    build:
+      context: ./client 
+      dockerfile: Dockerfile
+    container_name: client_zkp
+    restart: always
+    depends_on:
+      - app
+    environment:
+      - SERVER_URL=http://app:8000
+    volumes:
+      - ./client:/app/client
+
